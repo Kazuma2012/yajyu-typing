@@ -1,0 +1,1 @@
+# yajyu-typing
