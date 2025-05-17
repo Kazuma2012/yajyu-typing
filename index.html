@@ -1,0 +1,188 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8" />
+  <title>野獣タイピング</title>
+  <style>
+    body {
+      font-family: 'Arial', sans-serif;
+      background-color: #222;
+      color: #fff;
+      text-align: center;
+      padding-top: 50px;
+    }
+    #word {
+      font-size: 48px;
+      margin: 20px;
+    }
+    #romaji {
+      font-size: 24px;
+      color: lightgreen;
+      margin-bottom: 10px;
+      letter-spacing: 5px;
+    }
+    #input {
+      font-size: 24px;
+      padding: 10px;
+      width: 300px;
+    }
+    #score, #high-score, #timer {
+      font-size: 20px;
+      margin-top: 10px;
+    }
+    #start-btn, #play-btn, #pause-btn, #restart-btn {
+      margin: 10px 5px;
+      padding: 10px 20px;
+      font-size: 16px;
+      background-color: #00bcd4;
+      color: white;
+      border: none;
+      cursor: pointer;
+    }
+    #start-btn:hover, #play-btn:hover, #pause-btn:hover, #restart-btn:hover {
+      background-color: #0097a7;
+    }
+  </style>
+</head>
+<body>
+  <h1>野獣タイピング</h1>
+  <div id="word">スタートを押してね！</div>
+  <div id="romaji"></div>
+  <input type="text" id="input" disabled placeholder="ここに1文字ずつ入力！" />
+  <div id="score">スコア: 0</div>
+  <div id="high-score">最高記録: 0</div>
+  <div id="timer">30秒</div>
+  <button id="start-btn">ゲームスタート</button>
+
+  <!-- 🎵 音楽操作ボタン -->
+  <div>
+    <button id="play-btn">音楽再生 ▶️</button>
+    <button id="pause-btn">一時停止 ⏸</button>
+    <button id="restart-btn">最初から 🔁</button>
+  </div>
+
+  <!-- 🎧 音楽ファイル（最初は停止状態） -->
+  <audio id="bgm" src="YAJYU&U.mp3"></audio>
+
+  <script>
+    const words = [
+      { word: "やりますねー", romaji: "yarimasune-" },
+      { word: "イキスギィ！", romaji: "ikisugii!" },
+      { word: "イクイクイクイクンアッー", romaji: "ikuikuikuikunha-" },
+      { word: "お前のことが好きだったんだよ！", romaji: "omaenokotogasukidattandayo!" },
+      { word: "あぁいいっすね", romaji: "aaiissune" },
+      { word: "ファッ！？", romaji: "fa!?" },
+      { word: "まずウチさあ屋上あんだけど焼いてかない？", romaji: "mazuuchisaokujouandakedomyaitekanaisho" },
+      { word: "悔い改めて", romaji: "kuiaratamete" },
+      { word: "ンアーッ！", romaji: "nha-!" },
+      { word: "仕方ないね", romaji: "shikatanai ne" }
+    ];
+
+    let score = 0;
+    let highScore = localStorage.getItem("highScore") || 0;
+    let currentWord = "";
+    let currentRomaji = "";
+    let inputIndex = 0;
+    let timer = 30;
+    let timerInterval;
+    let usedWords = [];
+
+    const wordElement = document.getElementById("word");
+    const romajiElement = document.getElementById("romaji");
+    const inputElement = document.getElementById("input");
+    const scoreElement = document.getElementById("score");
+    const highScoreElement = document.getElementById("high-score");
+    const timerElement = document.getElementById("timer");
+    const startBtn = document.getElementById("start-btn");
+
+    const bgm = document.getElementById("bgm");
+    const playBtn = document.getElementById("play-btn");
+    const pauseBtn = document.getElementById("pause-btn");
+    const restartBtn = document.getElementById("restart-btn");
+
+    playBtn.addEventListener("click", () => bgm.play());
+    pauseBtn.addEventListener("click", () => bgm.pause());
+    restartBtn.addEventListener("click", () => {
+      bgm.currentTime = 0;
+      bgm.play();
+    });
+
+    function getRandomWord() {
+      const unused = words.filter(w => !usedWords.includes(w.word));
+      if (unused.length === 0) {
+        clearInterval(timerInterval);
+        alert("すべての台詞をクリアしたよ！💪");
+        inputElement.disabled = true;
+        return { word: "完全勝利！", romaji: "" };
+      }
+      const index = Math.floor(Math.random() * unused.length);
+      const word = unused[index];
+      usedWords.push(word.word);
+      return word;
+    }
+
+    function displayWord() {
+      const wordObj = getRandomWord();
+      currentWord = wordObj.word;
+      currentRomaji = wordObj.romaji;
+      inputIndex = 0;
+      wordElement.textContent = currentWord;
+      updateRomajiDisplay();
+    }
+
+    function updateRomajiDisplay() {
+      const remaining = currentRomaji.slice(inputIndex);
+      romajiElement.textContent = `ローマ字: ${"ー".repeat(inputIndex)}${remaining}`;
+    }
+
+    function updateTimer() {
+      timer--;
+      timerElement.textContent = `${timer}秒`;
+      if (timer <= 0) {
+        clearInterval(timerInterval);
+        inputElement.disabled = true;
+        if (score > highScore) {
+          highScore = score;
+          localStorage.setItem("highScore", highScore);
+        }
+        highScoreElement.textContent = `最高記録: ${highScore}`;
+        alert(`時間切れ！スコアは ${score} 点でした！`);
+      }
+    }
+
+    function startGame() {
+      score = 0;
+      timer = 30;
+      usedWords = [];
+      scoreElement.textContent = "スコア: 0";
+      highScoreElement.textContent = `最高記録: ${highScore}`;
+      timerElement.textContent = `${timer}秒`;
+      inputElement.disabled = false;
+      inputElement.value = "";
+      inputElement.focus();
+      displayWord();
+      clearInterval(timerInterval);
+      timerInterval = setInterval(updateTimer, 1000);
+    }
+
+    inputElement.addEventListener("input", () => {
+      const val = inputElement.value.trim().toLowerCase();
+      if (val === currentRomaji[inputIndex]) {
+        score++;
+        inputIndex++;
+        updateRomajiDisplay();
+        scoreElement.textContent = `スコア: ${score}`;
+        inputElement.value = "";
+        if (inputIndex >= currentRomaji.length) {
+          displayWord();
+        }
+      } else {
+        inputElement.value = "";
+      }
+    });
+
+    startBtn.addEventListener("click", startGame);
+    highScoreElement.textContent = `最高記録: ${highScore}`;
+  </script>
+</body>
+</html>
